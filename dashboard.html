@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Staff Dashboard — Cafe Barco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ---------------------------------------------------------------
+     SETUP: this points at the same Apps Script Web App URL as
+     booking-widget.html. If you ever redeploy to a different Web App
+     URL, update BOOKING_API_URL below to match.
+
+     This page has NO passcode or login of any kind — anyone who opens
+     this link sees every booking's name, phone and email straight away.
+     Treat the link itself as the only thing keeping that private: don't
+     post it publicly, don't put it in a public "Book Now" style button,
+     and only share it with staff directly (unlike booking-widget.html,
+     which is meant to be public).
+  --------------------------------------------------------------- */
+  :root {
+    --cream: #faf5ec;
+    --surface: #ffffff;
+    --surface-alt: #f3ead9;
+    --border: #e6dcc8;
+    --ink: #2b1d14;
+    --ink-muted: #7a6a58;
+    --coffee: #5b3a29;
+    --coffee-dark: #402719;
+    --terracotta: #c1652e;
+    --terracotta-dark: #a5501f;
+    --success: #3f7d53;
+    --success-bg: #eaf3ec;
+    --error: #b3432b;
+    --error-bg: #fbeee9;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(43, 29, 20, 0.06), 0 8px 24px rgba(43, 29, 20, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Work Sans", -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 20px 56px;
+  }
+
+  header.brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  header.brand .identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  header.brand .mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--coffee);
+    color: var(--cream);
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 17px;
+    flex: 0 0 auto;
+  }
+
+  header.brand h1 {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 22px;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  header.brand p {
+    margin: 2px 0 0;
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+  }
+
+  button.btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 18px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  button.btn-ghost {
+    background: transparent;
+    color: var(--ink-muted);
+    border-color: var(--border);
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+  button.btn-ghost:hover { border-color: var(--coffee); color: var(--coffee); }
+
+  .notice {
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .notice.error { background: var(--error-bg); color: var(--error); }
+  .notice.info { background: var(--surface-alt); color: var(--ink-muted); }
+
+  /* Tabs */
+  .tab-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .tab-chip {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  .tab-chip .n { font-weight: 400; opacity: 0.8; margin-left: 4px; }
+  .tab-chip:hover { border-color: var(--terracotta); }
+  .tab-chip.active {
+    background: var(--coffee);
+    border-color: var(--coffee);
+    color: #fff;
+  }
+
+  /* Filters */
+  .filter-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    align-items: center;
+  }
+  .filter-row input[type="search"] {
+    flex: 1 1 200px;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    background: var(--surface);
+  }
+  .filter-row input[type="search"]:focus {
+    outline: 2px solid var(--terracotta);
+    outline-offset: 1px;
+    border-color: var(--terracotta);
+  }
+  select.filter-select {
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  /* Table */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  table.bookings {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 720px;
+  }
+  table.bookings th {
+    text-align: left;
+    background: var(--surface-alt);
+    color: var(--ink-muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 10px 12px;
+    white-space: nowrap;
+  }
+  table.bookings td {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.bookings tr:hover td { background: var(--surface-alt); }
+  .pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pill.area-inside { background: #e7ecff; color: #33418a; }
+  .pill.area-outside { background: #eaf3ec; color: var(--success); }
+  .pill.type-day { background: #fdf1de; color: #8a5a1f; }
+  .pill.type-sundowner { background: #fbe7df; color: var(--terracotta-dark); }
+  .booking-id {
+    font-family: "Work Sans", monospace;
+    font-size: 11.5px;
+    color: var(--ink-muted);
+  }
+  .empty-row td {
+    text-align: center;
+    color: var(--ink-muted);
+    padding: 28px 12px;
+  }
+  .notes-cell {
+    max-width: 220px;
+    white-space: normal;
+    color: var(--ink-muted);
+  }
+
+  .meta-line {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    margin: -8px 0 16px;
+  }
+
+  [hidden] { display: none !important; }
+
+  @media (max-width: 640px) {
+    .page { padding: 20px 12px 40px; }
+    .card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- No passcode/gate — the dashboard loads straight away. See the
+       SETUP comment at the top of this file's <style> for what that
+       means for how you share this link. -->
+  <div id="dashboard">
+    <header class="brand">
+      <div class="identity">
+        <div class="mark">CB</div>
+        <div>
+          <h1>Staff Dashboard</h1>
+          <p id="lastUpdated">&nbsp;</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" id="refreshBtn">Refresh</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div id="loadError" class="notice error" hidden></div>
+
+      <div class="tab-strip" id="tabStrip"></div>
+
+      <div class="filter-row">
+        <input type="search" id="searchInput" placeholder="Search name, phone or email…" />
+        <select class="filter-select" id="typeFilter">
+          <option value="">All booking types</option>
+        </select>
+        <select class="filter-select" id="areaFilter">
+          <option value="">All areas</option>
+        </select>
+      </div>
+
+      <p class="meta-line" id="resultCount"></p>
+
+      <div class="table-wrap">
+        <table class="bookings">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Party</th>
+              <th>Name</th>
+              <th>Contact</th>
+              <th>Area</th>
+              <th>Type</th>
+              <th>Notes</th>
+              <th>Booking ID</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="empty-row"><td colspan="8">Loading bookings…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- SETUP: same Web App URL as booking-widget.html ----
+  var BOOKING_API_URL = "https://script.google.com/macros/s/AKfycby43dkF4v_nNoCpAst_xrwYHmcWpZhaswzgq18mvVkwXGNZUQS-B70q6Wy2DIxgJ-sj/exec";
+  // ----------------------------------------------------------
+
+  var REFRESH_MS = 60000;
+
+  var els = {
+    lastUpdated: document.getElementById('lastUpdated'),
+    refreshBtn: document.getElementById('refreshBtn'),
+    loadError: document.getElementById('loadError'),
+    tabStrip: document.getElementById('tabStrip'),
+    searchInput: document.getElementById('searchInput'),
+    typeFilter: document.getElementById('typeFilter'),
+    areaFilter: document.getElementById('areaFilter'),
+    resultCount: document.getElementById('resultCount'),
+    tableBody: document.getElementById('tableBody')
+  };
+
+  var state = {
+    today: null,
+    bookings: [],
+    activeTab: 'today', // today | tomorrow | upcoming | past | all
+    search: '',
+    typeFilterVal: '',
+    areaFilterVal: '',
+    refreshTimer: null
+  };
+
+  var TABS = [
+    { id: 'today', label: 'Today' },
+    { id: 'tomorrow', label: 'Tomorrow' },
+    { id: 'upcoming', label: 'Upcoming' },
+    { id: 'past', label: 'Past' },
+    { id: 'all', label: 'All' }
+  ];
+
+  function apiGet(params) {
+    var qs = Object.keys(params).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    return fetch(BOOKING_API_URL + '?' + qs).then(function (r) { return r.json(); });
+  }
+
+  function fmtTime12(t) {
+    if (!t || t.indexOf(':') === -1) return t || '—';
+    var parts = t.split(':');
+    var h = parseInt(parts[0], 10);
+    var m = parts[1];
+    var suffix = h >= 12 ? 'pm' : 'am';
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + m + suffix;
+  }
+
+  function fmtDateLabel(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return iso;
+    var DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()];
+  }
+
+  function addDaysISO(iso, days) {
+    var d = new Date(iso + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function areaSlug(area) {
+    return /outside/i.test(area || '') ? 'outside' : 'inside';
+  }
+  function typeSlug(type) {
+    return /sundowner/i.test(type || '') ? 'sundowner' : 'day';
+  }
+
+  // ---- Data ----
+  // No passcode is sent or checked anymore — the feed is open to whoever
+  // has this page's URL, so keep that URL private (see the SETUP comment
+  // at the top of the <style> block).
+
+  function applyBookingsResponse(res) {
+    state.today = res.today;
+    state.bookings = res.bookings || [];
+    els.lastUpdated.textContent = 'Updated ' + new Date().toLocaleTimeString();
+    buildFilterOptions();
+    render();
+  }
+
+  function refresh(silent) {
+    apiGet({ action: 'bookings' }).then(function (res) {
+      if (!res || res.success !== true) {
+        if (!silent) {
+          els.loadError.textContent = "Couldn't load bookings — please try again.";
+          els.loadError.hidden = false;
+        }
+        return;
+      }
+      els.loadError.hidden = true;
+      applyBookingsResponse(res);
+    }).catch(function () {
+      if (!silent) {
+        els.loadError.textContent = "Couldn't reach the booking system.";
+        els.loadError.hidden = false;
+      }
+    });
+  }
+
+  els.refreshBtn.addEventListener('click', function () { refresh(false); });
+
+  function startAutoRefresh() {
+    if (state.refreshTimer) clearInterval(state.refreshTimer);
+    state.refreshTimer = setInterval(function () { refresh(true); }, REFRESH_MS);
+  }
+
+  // ---- Filters ----
+
+  function buildFilterOptions() {
+    var types = {};
+    var areas = {};
+    state.bookings.forEach(function (b) {
+      if (b.type) types[b.type] = true;
+      if (b.area) areas[b.area] = true;
+    });
+
+    var typeVal = els.typeFilter.value;
+    els.typeFilter.innerHTML = '<option value="">All booking types</option>';
+    Object.keys(types).sort().forEach(function (t) {
+      var opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      els.typeFilter.appendChild(opt);
+    });
+    els.typeFilter.value = types[typeVal] ? typeVal : '';
+
+    var areaVal = els.areaFilter.value;
+    els.areaFilter.innerHTML = '<option value="">All areas</option>';
+    Object.keys(areas).sort().forEach(function (a) {
+      var opt = document.createElement('option');
+      opt.value = a; opt.textContent = a;
+      els.areaFilter.appendChild(opt);
+    });
+    els.areaFilter.value = areas[areaVal] ? areaVal : '';
+  }
+
+  els.searchInput.addEventListener('input', function () {
+    state.search = els.searchInput.value.trim().toLowerCase();
+    render();
+  });
+  els.typeFilter.addEventListener('change', function () {
+    state.typeFilterVal = els.typeFilter.value;
+    render();
+  });
+  els.areaFilter.addEventListener('change', function () {
+    state.areaFilterVal = els.areaFilter.value;
+    render();
+  });
+
+  // ---- Tabs ----
+
+  function buildTabStrip() {
+    els.tabStrip.innerHTML = '';
+    var counts = tabCounts();
+    TABS.forEach(function (tab) {
+      var chip = document.createElement('div');
+      chip.className = 'tab-chip' + (state.activeTab === tab.id ? ' active' : '');
+      chip.innerHTML = tab.label + '<span class="n">' + (counts[tab.id] || 0) + '</span>';
+      chip.addEventListener('click', function () {
+        state.activeTab = tab.id;
+        render();
+      });
+      els.tabStrip.appendChild(chip);
+    });
+  }
+
+  function tabCounts() {
+    var c = { today: 0, tomorrow: 0, upcoming: 0, past: 0, all: state.bookings.length };
+    var today = state.today;
+    var tomorrow = today ? addDaysISO(today, 1) : null;
+    state.bookings.forEach(function (b) {
+      if (!today) return;
+      if (b.date === today) c.today++;
+      else if (b.date === tomorrow) c.tomorrow++;
+      else if (b.date > tomorrow) c.upcoming++;
+      else if (b.date < today) c.past++;
+    });
+    return c;
+  }
+
+  // ---- Render ----
+
+  function matchesFilters(b) {
+    if (state.typeFilterVal && b.type !== state.typeFilterVal) return false;
+    if (state.areaFilterVal && b.area !== state.areaFilterVal) return false;
+    if (state.search) {
+      var hay = [b.name, b.phone, b.email, b.bookingId].join(' ').toLowerCase();
+      if (hay.indexOf(state.search) === -1) return false;
+    }
+    return true;
+  }
+
+  function matchesTab(b) {
+    var today = state.today;
+    if (!today || state.activeTab === 'all') return true;
+    var tomorrow = addDaysISO(today, 1);
+    if (state.activeTab === 'today') return b.date === today;
+    if (state.activeTab === 'tomorrow') return b.date === tomorrow;
+    if (state.activeTab === 'upcoming') return b.date > tomorrow;
+    if (state.activeTab === 'past') return b.date < today;
+    return true;
+  }
+
+  function render() {
+    buildTabStrip();
+
+    var showDate = state.activeTab === 'all' || state.activeTab === 'upcoming' || state.activeTab === 'past';
+    var rows = state.bookings.filter(matchesTab).filter(matchesFilters);
+
+    els.resultCount.textContent = rows.length + (rows.length === 1 ? ' booking' : ' bookings');
+
+    els.tableBody.innerHTML = '';
+    if (!rows.length) {
+      var tr = document.createElement('tr');
+      tr.className = 'empty-row';
+      var td = document.createElement('td');
+      td.colSpan = 8;
+      td.textContent = 'No bookings here.';
+      tr.appendChild(td);
+      els.tableBody.appendChild(tr);
+      return;
+    }
+
+    rows.forEach(function (b) {
+      var tr = document.createElement('tr');
+
+      var timeCell = showDate
+        ? fmtDateLabel(b.date) + ' · ' + fmtTime12(b.time)
+        : fmtTime12(b.time);
+
+      var contact = [b.phone, b.email].filter(Boolean).join(' · ') || '—';
+
+      tr.innerHTML =
+        '<td>' + escapeHtml(timeCell) + '</td>' +
+        '<td>' + (b.partySize || '—') + '</td>' +
+        '<td>' + escapeHtml(b.name || '—') + '</td>' +
+        '<td>' + escapeHtml(contact) + '</td>' +
+        '<td><span class="pill area-' + areaSlug(b.area) + '">' + escapeHtml(b.area || '—') + '</span></td>' +
+        '<td><span class="pill type-' + typeSlug(b.type) + '">' + escapeHtml(b.type || '—') + '</span></td>' +
+        '<td class="notes-cell">' + escapeHtml(b.notes || '') + '</td>' +
+        '<td class="booking-id">' + escapeHtml(b.bookingId || '') + '</td>';
+
+      els.tableBody.appendChild(tr);
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ---- Init ----
+
+  function init() {
+    if (!BOOKING_API_URL || BOOKING_API_URL.indexOf('PASTE_YOUR') === 0) {
+      els.loadError.textContent = 'BOOKING_API_URL is not set in dashboard.html yet.';
+      els.loadError.hidden = false;
+      return;
+    }
+    refresh(false);
+    startAutoRefresh();
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>

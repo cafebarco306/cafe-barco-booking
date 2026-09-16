@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Book a Table — Cafe Barco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ---------------------------------------------------------------
+     SETUP: paste your Google Apps Script Web App URL here once you've
+     deployed Code.gs (see SETUP-GUIDE.txt). Until you do, this page
+     shows a friendly "not connected yet" notice instead of the form.
+  --------------------------------------------------------------- */
+  :root {
+    --cream: #faf5ec;
+    --surface: #ffffff;
+    --surface-alt: #f3ead9;
+    --border: #e6dcc8;
+    --ink: #2b1d14;
+    --ink-muted: #7a6a58;
+    --coffee: #5b3a29;
+    --coffee-dark: #402719;
+    --terracotta: #c1652e;
+    --terracotta-dark: #a5501f;
+    --success: #3f7d53;
+    --success-bg: #eaf3ec;
+    --error: #b3432b;
+    --error-bg: #fbeee9;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(43, 29, 20, 0.06), 0 8px 24px rgba(43, 29, 20, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Work Sans", -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 20px 56px;
+  }
+
+  header.brand {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  header.brand .mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--coffee);
+    color: var(--cream);
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 22px;
+    margin-bottom: 14px;
+  }
+
+  header.brand h1 {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 30px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  header.brand p {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 15px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px;
+  }
+
+  .steps {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 26px;
+  }
+
+  .steps .step {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.2s ease;
+  }
+
+  .steps .step.done,
+  .steps .step.active {
+    background: var(--terracotta);
+  }
+
+  h2.section-title {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 19px;
+    margin: 0 0 4px;
+  }
+
+  p.section-hint {
+    margin: 0 0 18px;
+    color: var(--ink-muted);
+    font-size: 14px;
+  }
+
+  /* Type strip (Day / Sundowner) */
+  .type-strip {
+    display: flex;
+    gap: 10px;
+    margin: 0 0 4px;
+  }
+
+  .type-chip {
+    flex: 1;
+    padding: 14px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    text-align: center;
+    cursor: pointer;
+    font-family: "Work Sans", sans-serif;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .type-chip:hover { border-color: var(--terracotta); }
+
+  .type-chip .label {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .type-chip .hours {
+    display: block;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 3px;
+  }
+
+  .type-chip.selected {
+    background: var(--terracotta);
+    border-color: var(--terracotta);
+  }
+  .type-chip.selected .label,
+  .type-chip.selected .hours { color: #fff; }
+
+  .type-chip.disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .type-chip.disabled:hover { border-color: var(--border); }
+  .type-chip.disabled .hours { font-style: italic; }
+
+  /* Area strip */
+  .area-strip {
+    display: flex;
+    gap: 10px;
+    margin: 0 0 4px;
+  }
+
+  .area-chip {
+    flex: 1;
+    padding: 14px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    text-align: center;
+    cursor: pointer;
+    font-family: "Work Sans", sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .area-chip:hover { border-color: var(--terracotta); }
+
+  .area-chip .avail {
+    display: block;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 3px;
+  }
+
+  .area-chip.selected {
+    background: var(--coffee);
+    border-color: var(--coffee);
+    color: #fff;
+  }
+  .area-chip.selected .avail { color: #e9dcca; }
+
+  /* Date strip */
+  .date-strip {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin: 0 -4px 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    scrollbar-width: thin;
+  }
+
+  .date-chip {
+    flex: 0 0 auto;
+    width: 76px;
+    padding: 12px 8px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    text-align: center;
+    cursor: pointer;
+    font-family: "Work Sans", sans-serif;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .date-chip .dow {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+
+  .date-chip .dom {
+    display: block;
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 20px;
+  }
+
+  .date-chip .mon {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-top: 2px;
+  }
+
+  .date-chip:hover { border-color: var(--terracotta); }
+
+  .date-chip.selected {
+    background: var(--coffee);
+    border-color: var(--coffee);
+  }
+  .date-chip.selected .dow,
+  .date-chip.selected .mon { color: #e9dcca; }
+  .date-chip.selected .dom { color: #ffffff; }
+
+  /* Time grid */
+  .time-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 10px;
+  }
+
+  .time-slot {
+    padding: 10px 6px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    text-align: center;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .time-slot:hover { border-color: var(--terracotta); }
+
+  .time-slot.selected {
+    background: var(--terracotta);
+    border-color: var(--terracotta);
+    color: #fff;
+  }
+
+  .time-slot.full {
+    color: var(--ink-muted);
+    background: var(--surface-alt);
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+
+  /* Form fields */
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--coffee-dark);
+  }
+
+  .field .optional {
+    font-weight: 400;
+    color: var(--ink-muted);
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--surface);
+  }
+
+  .field input:focus,
+  .field textarea:focus,
+  .field select:focus {
+    outline: 2px solid var(--terracotta);
+    outline-offset: 1px;
+    border-color: var(--terracotta);
+  }
+
+  .party-stepper {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .party-stepper button {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--coffee);
+  }
+
+  .party-stepper button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .party-stepper .count {
+    font-family: "Fraunces", serif;
+    font-size: 22px;
+    font-weight: 600;
+    min-width: 70px;
+    text-align: center;
+  }
+
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 420px) {
+    .row-2 { grid-template-columns: 1fr; }
+  }
+
+  .summary-box {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  .summary-box dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 14px;
+  }
+
+  .summary-box dt { color: var(--ink-muted); }
+  .summary-box dd { margin: 0; font-weight: 600; }
+
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 22px;
+    gap: 12px;
+  }
+
+  button.btn {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 12px 22px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  button.btn-primary {
+    background: var(--coffee);
+    color: #fff;
+    margin-left: auto;
+  }
+  button.btn-primary:hover { background: var(--coffee-dark); }
+  button.btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  button.btn-ghost {
+    background: transparent;
+    color: var(--ink-muted);
+    border-color: var(--border);
+  }
+  button.btn-ghost:hover { border-color: var(--coffee); color: var(--coffee); }
+
+  .notice {
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+  .notice.error { background: var(--error-bg); color: var(--error); }
+  .notice.info { background: var(--surface-alt); color: var(--ink-muted); }
+
+  .empty-hint {
+    color: var(--ink-muted);
+    font-size: 14px;
+    padding: 10px 2px;
+  }
+
+  /* Confirmation screen */
+  .confirm-wrap { text-align: center; padding: 12px 0 4px; }
+  .confirm-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--success-bg);
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 28px;
+  }
+  .confirm-wrap h2 {
+    font-family: "Fraunces", serif;
+    font-size: 22px;
+    margin: 0 0 6px;
+  }
+  .confirm-wrap p.lead { color: var(--ink-muted); margin: 0 0 20px; font-size: 15px; }
+  .booking-id {
+    font-family: "Work Sans", monospace;
+    letter-spacing: 0.03em;
+    background: var(--surface-alt);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-weight: 600;
+  }
+
+  footer.foot {
+    text-align: center;
+    margin-top: 22px;
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+
+  .paused-card {
+    text-align: center;
+    padding: 36px 24px;
+  }
+  .paused-card h2 {
+    font-family: "Fraunces", serif;
+    font-size: 20px;
+    margin: 0 0 8px;
+  }
+  .paused-card p { color: var(--ink-muted); margin: 0; }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="brand">
+    <div class="mark">CB</div>
+    <h1>Cafe Barco</h1>
+    <p id="brandSubtitle">Book a table &middot; Weekdays</p>
+  </header>
+
+  <div class="card">
+
+    <!-- Not-connected notice (shown until BOOKING_API_URL is set) -->
+    <div id="setupNotice" hidden>
+      <h2 class="section-title">Almost ready</h2>
+      <p class="section-hint">
+        This page isn't connected to the booking sheet yet. Open
+        <code>booking-widget.html</code> and set <code>BOOKING_API_URL</code>
+        to your deployed Apps Script Web App URL (see SETUP-GUIDE.txt).
+      </p>
+    </div>
+
+    <!-- Paused state (master switch off, or every booking type off) -->
+    <div id="pausedCard" class="paused-card" hidden>
+      <h2>Online bookings are paused</h2>
+      <p id="pausedMessage"></p>
+    </div>
+
+    <!-- Booking flow -->
+    <div id="flow" hidden>
+      <div class="steps">
+        <div class="step" data-step="1"></div>
+        <div class="step" data-step="2"></div>
+        <div class="step" data-step="3"></div>
+      </div>
+
+      <!-- Step 1: booking type + area + date + time -->
+      <section id="step1">
+        <h2 class="section-title">Choose a booking type</h2>
+        <p class="section-hint">Day Booking or Sundowner &mdash; each has its own hours.</p>
+        <div id="typeStrip" class="type-strip"></div>
+
+        <div style="height:22px"></div>
+
+        <h2 class="section-title">Choose a seating area</h2>
+        <p class="section-hint">Booth seating is indoors; the other option is outside.</p>
+        <div id="areaStrip" class="area-strip"></div>
+
+        <div style="height:22px"></div>
+
+        <h2 class="section-title">Choose a date</h2>
+        <p class="section-hint">We take booking only on weekdays, no weekends and no public holidays.</p>
+        <p class="section-hint">Online bookings close at 11:59pm the night before &mdash; same-day bookings aren't available. Please walk in for same-day.</p>
+        <p class="section-hint">Email us on cafebarco306@gmail.com for larger booking and catering requirement.</p>
+        <div id="dateStrip" class="date-strip"></div>
+
+        <div style="height:22px"></div>
+
+        <h2 class="section-title">Choose a time</h2>
+        <p class="section-hint" id="timeHint">Pick a booking type, seating area and date first.</p>
+        <div id="timeGrid" class="time-grid"></div>
+
+        <div class="actions">
+          <span></span>
+          <button class="btn btn-primary" id="toStep2" disabled>Continue</button>
+        </div>
+      </section>
+
+      <!-- Step 2: party size + details -->
+      <section id="step2" hidden>
+        <h2 class="section-title">Party size</h2>
+        <p class="section-hint">Larger groups may need extra notice &mdash; add a note below.</p>
+        <div class="party-stepper">
+          <button type="button" id="partyMinus" aria-label="Decrease party size">&minus;</button>
+          <span class="count" id="partyCount">2</span>
+          <button type="button" id="partyPlus" aria-label="Increase party size">&plus;</button>
+        </div>
+
+        <div style="height:20px"></div>
+
+        <h2 class="section-title">Your details</h2>
+        <div class="field">
+          <label for="fName">Name</label>
+          <input id="fName" type="text" autocomplete="name" placeholder="Full name" />
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="fPhone">Phone <span class="optional">(or email below)</span></label>
+            <input id="fPhone" type="tel" autocomplete="tel" placeholder="04xx xxx xxx" />
+          </div>
+          <div class="field">
+            <label for="fEmail">Email <span class="optional">(or phone above)</span></label>
+            <input id="fEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="fNotes">Notes <span class="optional">(optional)</span></label>
+          <textarea id="fNotes" rows="2" placeholder="Allergies, high chair, large group, etc."></textarea>
+        </div>
+
+        <div id="step2Error" class="notice error" hidden></div>
+
+        <div class="actions">
+          <button class="btn btn-ghost" id="backTo1">Back</button>
+          <button class="btn btn-primary" id="toStep3">Review booking</button>
+        </div>
+      </section>
+
+      <!-- Step 3: review + submit -->
+      <section id="step3" hidden>
+        <h2 class="section-title">Review your booking</h2>
+        <p class="section-hint">Check the details, then confirm.</p>
+
+        <div class="summary-box">
+          <dl>
+            <dt>Booking type</dt><dd id="sumType">&mdash;</dd>
+            <dt>Date</dt><dd id="sumDate">&mdash;</dd>
+            <dt>Time</dt><dd id="sumTime">&mdash;</dd>
+            <dt>Area</dt><dd id="sumArea">&mdash;</dd>
+            <dt>Party size</dt><dd id="sumParty">&mdash;</dd>
+            <dt>Name</dt><dd id="sumName">&mdash;</dd>
+            <dt>Contact</dt><dd id="sumContact">&mdash;</dd>
+          </dl>
+        </div>
+
+        <div id="step3Error" class="notice error" hidden></div>
+
+        <div class="actions">
+          <button class="btn btn-ghost" id="backTo2">Back</button>
+          <button class="btn btn-primary" id="submitBooking">Confirm booking</button>
+        </div>
+      </section>
+
+      <!-- Confirmation -->
+      <section id="stepDone" hidden>
+        <div class="confirm-wrap">
+          <div class="confirm-icon">&#10003;</div>
+          <h2>Booking confirmed</h2>
+          <p class="lead">We've saved your table and sent a confirmation.</p>
+          <div class="summary-box" style="text-align:left">
+            <dl>
+              <dt>Booking ID</dt><dd><span class="booking-id" id="doneId">&mdash;</span></dd>
+              <dt>Booking type</dt><dd id="doneType">&mdash;</dd>
+              <dt>Date</dt><dd id="doneDate">&mdash;</dd>
+              <dt>Time</dt><dd id="doneTime">&mdash;</dd>
+              <dt>Area</dt><dd id="doneArea">&mdash;</dd>
+              <dt>Party size</dt><dd id="doneParty">&mdash;</dd>
+            </dl>
+          </div>
+          <button class="btn btn-primary" id="bookAnother" style="margin:0 auto">Make another booking</button>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <footer class="foot" id="pageFooter">Cafe Barco &middot; Weekdays</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- SETUP: paste your deployed Apps Script Web App URL below ----
+  var BOOKING_API_URL = "https://script.google.com/macros/s/AKfycbw0tlTJ6YGzpRc0ZFdwyHNBMsW9zudDfskTg_64h6fme3YqGODBvDt7ttuHFbooASkn/exec";
+  // --------------------------------------------------------------------
+
+  var els = {
+    setupNotice: document.getElementById('setupNotice'),
+    pausedCard: document.getElementById('pausedCard'),
+    pausedMessage: document.getElementById('pausedMessage'),
+    flow: document.getElementById('flow'),
+    steps: document.querySelectorAll('.steps .step'),
+    step1: document.getElementById('step1'),
+    step2: document.getElementById('step2'),
+    step3: document.getElementById('step3'),
+    stepDone: document.getElementById('stepDone'),
+    brandSubtitle: document.getElementById('brandSubtitle'),
+    pageFooter: document.getElementById('pageFooter'),
+    typeStrip: document.getElementById('typeStrip'),
+    areaStrip: document.getElementById('areaStrip'),
+    dateStrip: document.getElementById('dateStrip'),
+    timeGrid: document.getElementById('timeGrid'),
+    timeHint: document.getElementById('timeHint'),
+    toStep2: document.getElementById('toStep2'),
+    backTo1: document.getElementById('backTo1'),
+    toStep3: document.getElementById('toStep3'),
+    backTo2: document.getElementById('backTo2'),
+    submitBooking: document.getElementById('submitBooking'),
+    bookAnother: document.getElementById('bookAnother'),
+    partyCount: document.getElementById('partyCount'),
+    partyMinus: document.getElementById('partyMinus'),
+    partyPlus: document.getElementById('partyPlus'),
+    fName: document.getElementById('fName'),
+    fPhone: document.getElementById('fPhone'),
+    fEmail: document.getElementById('fEmail'),
+    fNotes: document.getElementById('fNotes'),
+    step2Error: document.getElementById('step2Error'),
+    step3Error: document.getElementById('step3Error'),
+    sumType: document.getElementById('sumType'),
+    sumDate: document.getElementById('sumDate'),
+    sumTime: document.getElementById('sumTime'),
+    sumArea: document.getElementById('sumArea'),
+    sumParty: document.getElementById('sumParty'),
+    sumName: document.getElementById('sumName'),
+    sumContact: document.getElementById('sumContact'),
+    doneId: document.getElementById('doneId'),
+    doneType: document.getElementById('doneType'),
+    doneDate: document.getElementById('doneDate'),
+    doneTime: document.getElementById('doneTime'),
+    doneArea: document.getElementById('doneArea'),
+    doneParty: document.getElementById('doneParty')
+  };
+
+  var state = {
+    meta: null,
+    bookingTypes: [],       // e.g. [{id:'day', label:'Day Booking', enabled:true, pauseMessage:'...', openingTime:'07:00', lastBookingTime:'14:00', ...}, ...]
+    selectedType: null,     // e.g. "day"
+    areas: [],              // e.g. ["Booth (Inside)", "Outside"]
+    selectedArea: null,
+    selectedDate: null,     // "YYYY-MM-DD"
+    selectedDateLabel: null,
+    selectedTime: null,
+    lastSlots: [],          // cached response from the /slots call for the selected date+type
+    partySize: 2,
+    maxParty: 12
+  };
+
+  var DOW_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function toISODate(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  function fmtTime12(t) {
+    var parts = t.split(':');
+    var h = parseInt(parts[0], 10);
+    var m = parts[1];
+    var suffix = h >= 12 ? 'pm' : 'am';
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + m + suffix;
+  }
+
+  function setStep(n) {
+    [els.step1, els.step2, els.step3, els.stepDone].forEach(function (s) { s.hidden = true; });
+    if (n === 1) els.step1.hidden = false;
+    if (n === 2) els.step2.hidden = false;
+    if (n === 3) els.step3.hidden = false;
+    if (n === 'done') els.stepDone.hidden = false;
+    els.steps.forEach(function (chip) {
+      var idx = parseInt(chip.dataset.step, 10);
+      chip.classList.toggle('active', idx === n);
+      chip.classList.toggle('done', typeof n === 'number' ? idx < n : true);
+    });
+  }
+
+  function apiGet(params) {
+    var qs = Object.keys(params).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    return fetch(BOOKING_API_URL + '?' + qs).then(function (r) { return r.json(); });
+  }
+
+  function apiPost(payload) {
+    return fetch(BOOKING_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json(); });
+  }
+
+  function findType(id) {
+    return state.bookingTypes.filter(function (t) { return t.id === id; })[0] || null;
+  }
+
+  // ---- Booking type (Day / Sundowner) ----
+  // Each type carries its own `enabled` flag from the backend (true only
+  // when both the master "Bookings Open" switch and that type's own
+  // switch are on). Disabled types render greyed-out and aren't clickable.
+
+  function buildTypeStrip() {
+    els.typeStrip.innerHTML = '';
+    state.bookingTypes.forEach(function (t) {
+      var chip = document.createElement('div');
+      chip.className = 'type-chip' + (t.enabled ? '' : ' disabled');
+      chip.dataset.type = t.id;
+      var subLine = t.enabled
+        ? ((t.openingTime ? fmtTime12(t.openingTime) : '') + (t.lastBookingTime ? '–' + fmtTime12(t.lastBookingTime) : ''))
+        : 'Not taking bookings right now';
+      chip.innerHTML = '<span class="label">' + t.label + '</span><span class="hours">' + subLine + '</span>';
+      if (t.enabled) {
+        chip.addEventListener('click', function () { selectType(t.id); });
+      }
+      els.typeStrip.appendChild(chip);
+    });
+  }
+
+  function selectType(typeId) {
+    var t = findType(typeId);
+    if (!t || !t.enabled) return;
+    state.selectedType = typeId;
+    state.selectedTime = null;
+    Array.prototype.forEach.call(els.typeStrip.querySelectorAll('.type-chip'), function (c) {
+      c.classList.toggle('selected', c.dataset.type === typeId);
+    });
+    if (state.selectedDate) loadTimeSlots(state.selectedDate);
+    updateContinueEnabled();
+  }
+
+  // If exactly one booking type is currently enabled, pick it automatically
+  // so the customer isn't stuck choosing from a menu of one.
+  function maybeAutoSelectType() {
+    var enabled = state.bookingTypes.filter(function (t) { return t.enabled; });
+    if (enabled.length === 1) selectType(enabled[0].id);
+  }
+
+  // ---- Seating area ----
+
+  function buildAreaStrip() {
+    els.areaStrip.innerHTML = '';
+    state.areas.forEach(function (areaName) {
+      var chip = document.createElement('div');
+      chip.className = 'area-chip';
+      chip.dataset.area = areaName;
+      chip.innerHTML = '<span class="name">' + areaName + '</span>';
+      chip.addEventListener('click', function () { selectArea(areaName); });
+      els.areaStrip.appendChild(chip);
+    });
+  }
+
+  function selectArea(areaName) {
+    state.selectedArea = areaName;
+    state.selectedTime = null;
+    Array.prototype.forEach.call(els.areaStrip.querySelectorAll('.area-chip'), function (c) {
+      c.classList.toggle('selected', c.dataset.area === areaName);
+    });
+    renderTimeGrid();
+    updateContinueEnabled();
+  }
+
+  // ---- Date ----
+
+  function buildDateStrip() {
+    els.dateStrip.innerHTML = '';
+    var openDays = (state.meta.openDays || 'Mon,Tue,Wed,Thu,Fri').split(',').map(function (s) { return s.trim(); });
+    var blackout = state.meta.blackoutDates || [];
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var added = 0;
+    // Online bookings close 11:59pm the night before — no same-day
+    // bookings, so the date list starts at tomorrow, never today. The
+    // server enforces this independently (see isSameDayOrPast_ in
+    // Code.gs) in case this is ever bypassed client-side.
+    var cursor = new Date(today);
+    cursor.setDate(cursor.getDate() + 1);
+    var guard = 0;
+
+    while (added < 14 && guard < 60) {
+      guard++;
+      var iso = toISODate(cursor);
+      var dow = DOW_ABBR[cursor.getDay()];
+      if (openDays.indexOf(dow) !== -1 && blackout.indexOf(iso) === -1) {
+        (function (isoDate, dateObj) {
+          var chip = document.createElement('div');
+          chip.className = 'date-chip';
+          chip.innerHTML =
+            '<span class="dow">' + DOW_ABBR[dateObj.getDay()] + '</span>' +
+            '<span class="dom">' + dateObj.getDate() + '</span>' +
+            '<span class="mon">' + MONTHS[dateObj.getMonth()] + '</span>';
+          chip.addEventListener('click', function () { selectDate(isoDate, chip); });
+          chip.dataset.date = isoDate;
+          els.dateStrip.appendChild(chip);
+        })(iso, new Date(cursor));
+        added++;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  function selectDate(iso, chipEl) {
+    state.selectedDate = iso;
+    state.selectedTime = null;
+    Array.prototype.forEach.call(els.dateStrip.querySelectorAll('.date-chip'), function (c) {
+      c.classList.toggle('selected', c === chipEl);
+    });
+    loadTimeSlots(iso);
+    updateContinueEnabled();
+  }
+
+  // ---- Time slots ----
+  // Each call to /slots (for a given date + booking type) returns, for
+  // every time on that date, the remaining capacity broken down per
+  // seating area. We cache that full breakdown (state.lastSlots) and
+  // re-render the grid locally whenever the selected area changes,
+  // instead of re-fetching.
+
+  function loadTimeSlots(iso) {
+    state.lastSlots = [];
+    els.timeGrid.innerHTML = '';
+    if (!state.selectedType) {
+      els.timeHint.textContent = 'Pick a booking type to see times.';
+      return;
+    }
+    els.timeHint.textContent = 'Loading times…';
+    apiGet({ action: 'slots', date: iso, type: state.selectedType }).then(function (res) {
+      if (!res || res.error) {
+        els.timeHint.textContent = "Couldn't load times — please try again.";
+        return;
+      }
+      if (!res.open || !res.slots || !res.slots.length) {
+        els.timeHint.textContent = "No times available that day.";
+        return;
+      }
+      state.lastSlots = res.slots;
+      els.timeHint.textContent = 'All times are in Perth time.';
+      renderTimeGrid();
+    }).catch(function () {
+      els.timeHint.textContent = "Couldn't load times — please try again.";
+    });
+  }
+
+  function renderTimeGrid() {
+    els.timeGrid.innerHTML = '';
+    if (!state.selectedDate || !state.selectedType) return;
+    if (!state.selectedArea) {
+      els.timeHint.textContent = 'Pick a seating area to see times.';
+      return;
+    }
+    if (!state.lastSlots.length) return;
+
+    els.timeHint.textContent = 'All times are in Perth time.';
+    state.lastSlots.forEach(function (slot) {
+      var areaInfo = slot.areas.filter(function (a) { return a.name === state.selectedArea; })[0];
+      var remaining = areaInfo ? areaInfo.remaining : 0;
+      var full = remaining <= 0;
+
+      var btn = document.createElement('div');
+      btn.className = 'time-slot' + (full ? ' full' : '');
+      btn.textContent = fmtTime12(slot.time);
+      if (slot.time === state.selectedTime) btn.classList.add('selected');
+      if (!full) {
+        btn.addEventListener('click', function () {
+          state.selectedTime = slot.time;
+          Array.prototype.forEach.call(els.timeGrid.querySelectorAll('.time-slot'), function (t) {
+            t.classList.remove('selected');
+          });
+          btn.classList.add('selected');
+          updateContinueEnabled();
+        });
+      }
+      els.timeGrid.appendChild(btn);
+    });
+  }
+
+  function updateContinueEnabled() {
+    els.toStep2.disabled = !(state.selectedType && state.selectedArea && state.selectedDate && state.selectedTime);
+  }
+
+  function updatePartyDisplay() {
+    els.partyCount.textContent = state.partySize + (state.partySize === 1 ? ' guest' : ' guests');
+    els.partyMinus.disabled = state.partySize <= 1;
+    els.partyPlus.disabled = state.partySize >= state.maxParty;
+  }
+
+  els.partyMinus.addEventListener('click', function () {
+    if (state.partySize > 1) { state.partySize--; updatePartyDisplay(); }
+  });
+  els.partyPlus.addEventListener('click', function () {
+    if (state.partySize < state.maxParty) { state.partySize++; updatePartyDisplay(); }
+  });
+
+  els.toStep2.addEventListener('click', function () { setStep(2); });
+  els.backTo1.addEventListener('click', function () { setStep(1); });
+  els.backTo2.addEventListener('click', function () { setStep(2); });
+
+  els.toStep3.addEventListener('click', function () {
+    els.step2Error.hidden = true;
+    var name = els.fName.value.trim();
+    var phone = els.fPhone.value.trim();
+    var email = els.fEmail.value.trim();
+    if (!name) { return showError(els.step2Error, 'Please enter your name.'); }
+    if (!phone && !email) { return showError(els.step2Error, 'Please add a phone number or email.'); }
+
+    var typeInfo = findType(state.selectedType);
+    var dateObj = new Date(state.selectedDate + 'T00:00:00');
+    els.sumType.textContent = typeInfo ? typeInfo.label : state.selectedType;
+    els.sumDate.textContent = DOW_ABBR[dateObj.getDay()] + ', ' + dateObj.getDate() + ' ' + MONTHS[dateObj.getMonth()];
+    els.sumTime.textContent = fmtTime12(state.selectedTime);
+    els.sumArea.textContent = state.selectedArea;
+    els.sumParty.textContent = state.partySize + (state.partySize === 1 ? ' guest' : ' guests');
+    els.sumName.textContent = name;
+    els.sumContact.textContent = [phone, email].filter(Boolean).join(' · ');
+    setStep(3);
+  });
+
+  els.submitBooking.addEventListener('click', function () {
+    els.step3Error.hidden = true;
+    els.submitBooking.disabled = true;
+    els.submitBooking.textContent = 'Booking…';
+
+    apiPost({
+      action: 'book',
+      date: state.selectedDate,
+      time: state.selectedTime,
+      type: state.selectedType,
+      area: state.selectedArea,
+      partySize: state.partySize,
+      name: els.fName.value.trim(),
+      phone: els.fPhone.value.trim(),
+      email: els.fEmail.value.trim(),
+      notes: els.fNotes.value.trim()
+    }).then(function (res) {
+      els.submitBooking.disabled = false;
+      els.submitBooking.textContent = 'Confirm booking';
+      if (!res || res.success !== true) {
+        showError(els.step3Error, (res && res.error) || 'Something went wrong — please try again.');
+        return;
+      }
+      var typeInfo = findType(state.selectedType);
+      els.doneId.textContent = res.bookingId;
+      els.doneType.textContent = res.typeLabel || (typeInfo ? typeInfo.label : state.selectedType);
+      var dateObj = new Date(res.date + 'T00:00:00');
+      els.doneDate.textContent = DOW_ABBR[dateObj.getDay()] + ', ' + dateObj.getDate() + ' ' + MONTHS[dateObj.getMonth()];
+      els.doneTime.textContent = fmtTime12(res.time);
+      els.doneArea.textContent = res.area || state.selectedArea;
+      els.doneParty.textContent = res.partySize + (res.partySize === 1 ? ' guest' : ' guests');
+      setStep('done');
+    }).catch(function () {
+      els.submitBooking.disabled = false;
+      els.submitBooking.textContent = 'Confirm booking';
+      showError(els.step3Error, "Couldn't reach the booking system — please try again.");
+    });
+  });
+
+  els.bookAnother.addEventListener('click', function () {
+    state.selectedDate = null;
+    state.selectedTime = null;
+    state.selectedType = null;
+    state.selectedArea = null;
+    state.lastSlots = [];
+    state.partySize = 2;
+    els.fName.value = '';
+    els.fPhone.value = '';
+    els.fEmail.value = '';
+    els.fNotes.value = '';
+    updatePartyDisplay();
+    updateContinueEnabled();
+    buildTypeStrip();
+    buildAreaStrip();
+    buildDateStrip();
+    els.timeGrid.innerHTML = '';
+    els.timeHint.textContent = 'Pick a booking type, seating area and date first.';
+    setStep(1);
+    maybeAutoSelectType();
+  });
+
+  function showError(el, msg) {
+    el.textContent = msg;
+    el.hidden = false;
+  }
+
+  function init() {
+    if (!BOOKING_API_URL || BOOKING_API_URL.indexOf('PASTE_YOUR') === 0) {
+      els.setupNotice.hidden = false;
+      return;
+    }
+
+    apiGet({ action: 'meta' }).then(function (meta) {
+      state.meta = meta;
+      state.maxParty = meta.maxPartySize || 12;
+      state.partySize = Math.min(2, state.maxParty);
+      state.areas = meta.areas && meta.areas.length ? meta.areas : ['Booth (Inside)', 'Outside'];
+      state.bookingTypes = meta.bookingTypes && meta.bookingTypes.length ? meta.bookingTypes : [];
+
+      // Master switch off: whole page paused, nothing bookable.
+      if (!meta.open) {
+        els.pausedMessage.textContent = meta.pauseMessage || "We're not taking online bookings right now.";
+        els.pausedCard.hidden = false;
+        return;
+      }
+
+      // Master switch on, but every individual booking type is off.
+      var enabledTypes = state.bookingTypes.filter(function (t) { return t.enabled; });
+      if (state.bookingTypes.length && !enabledTypes.length) {
+        var msg = (state.bookingTypes[0] && state.bookingTypes[0].pauseMessage) || meta.pauseMessage || "We're not taking online bookings right now.";
+        els.pausedMessage.textContent = msg;
+        els.pausedCard.hidden = false;
+        return;
+      }
+
+      // Build the "Weekdays · Day 7:00am-2:00pm · Sundowner (closed)" subtitle from live settings.
+      var windows = state.bookingTypes.map(function (t) {
+        if (!t.enabled) return t.label + ' (closed)';
+        if (!t.openingTime || !t.lastBookingTime) return t.label;
+        return t.label + ' ' + fmtTime12(t.openingTime) + '–' + fmtTime12(t.lastBookingTime);
+      }).join(' &middot; ');
+      var subtitleHtml = 'Book a table &middot; Weekdays' + (windows ? ' &middot; ' + windows : '');
+      els.brandSubtitle.innerHTML = subtitleHtml;
+      els.pageFooter.innerHTML = 'Cafe Barco &middot; Weekdays' + (windows ? ' &middot; ' + windows : '');
+
+      els.flow.hidden = false;
+      updatePartyDisplay();
+      buildTypeStrip();
+      buildAreaStrip();
+      buildDateStrip();
+      setStep(1);
+      maybeAutoSelectType();
+    }).catch(function () {
+      els.setupNotice.hidden = false;
+      els.setupNotice.querySelector('p').textContent =
+        "Couldn't reach the booking system. Check BOOKING_API_URL and that the Web App is deployed with access set to Anyone.";
+    });
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
