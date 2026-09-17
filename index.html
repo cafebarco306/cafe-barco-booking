@@ -545,15 +545,14 @@
         <div style="height:22px"></div>
 
         <h2 class="section-title">Choose a seating area</h2>
-        <p class="section-hint">Booth seating is indoors; the other option is outside.</p>
+        <p class="section-hint">House / Inside is indoors; Alfresco / Deck is outside.</p>
         <div id="areaStrip" class="area-strip"></div>
 
         <div style="height:22px"></div>
 
         <h2 class="section-title">Choose a date</h2>
-        <p class="section-hint">We take booking only on weekdays, no weekends and no public holidays.</p>
-        <p class="section-hint">Online bookings close at 11:59pm the night before &mdash; same-day bookings aren't available. Please walk in for same-day.</p>
-        <p class="section-hint">Email us on cafebarco306@gmail.com for larger booking and catering requirement.</p>
+        <p class="section-hint">We take bookings only on weekdays, no weekends and no public holidays. Online bookings close at 11:59pm the night before, so the earliest date you can book is tomorrow.</p>
+        <p class="section-hint">Email us on cafebarco306@gmail.com for larger bookking and catering requirement.</p>
         <div id="dateStrip" class="date-strip"></div>
 
         <div style="height:22px"></div>
@@ -587,17 +586,18 @@
         </div>
         <div class="row-2">
           <div class="field">
-            <label for="fPhone">Phone <span class="optional">(or email below)</span></label>
-            <input id="fPhone" type="tel" autocomplete="tel" placeholder="04xx xxx xxx" />
+            <label for="fPhone">Phone</label>
+            <input id="fPhone" type="tel" autocomplete="tel" placeholder="04xx xxx xxx" required />
           </div>
           <div class="field">
-            <label for="fEmail">Email <span class="optional">(or phone above)</span></label>
+            <label for="fEmail">Email <span class="optional">(optional)</span></label>
             <input id="fEmail" type="email" autocomplete="email" placeholder="you@example.com" />
           </div>
         </div>
         <div class="field">
           <label for="fNotes">Notes <span class="optional">(optional)</span></label>
           <textarea id="fNotes" rows="2" placeholder="Allergies, high chair, large group, etc."></textarea>
+          <p class="section-hint" style="margin-top:6px;">While we will do our best, we may not be able to satisfy every request.</p>
         </div>
 
         <div id="step2Error" class="notice error" hidden></div>
@@ -718,7 +718,7 @@
     meta: null,
     bookingTypes: [],       // e.g. [{id:'day', label:'Day Booking', enabled:true, pauseMessage:'...', openingTime:'07:00', lastBookingTime:'14:00', ...}, ...]
     selectedType: null,     // e.g. "day"
-    areas: [],              // e.g. ["Booth (Inside)", "Outside"]
+    areas: [],              // e.g. ["House / Inside", "Alfresco / Deck"]
     selectedArea: null,
     selectedDate: null,     // "YYYY-MM-DD"
     selectedDateLabel: null,
@@ -852,10 +852,8 @@
     var today = new Date();
     today.setHours(0, 0, 0, 0);
     var added = 0;
-    // Online bookings close 11:59pm the night before — no same-day
-    // bookings, so the date list starts at tomorrow, never today. The
-    // server enforces this independently (see isSameDayOrPast_ in
-    // Code.gs) in case this is ever bypassed client-side.
+    // Online bookings close at 11:59pm the night before — the earliest
+    // bookable date is always tomorrow, never today.
     var cursor = new Date(today);
     cursor.setDate(cursor.getDate() + 1);
     var guard = 0;
@@ -984,7 +982,7 @@
     var phone = els.fPhone.value.trim();
     var email = els.fEmail.value.trim();
     if (!name) { return showError(els.step2Error, 'Please enter your name.'); }
-    if (!phone && !email) { return showError(els.step2Error, 'Please add a phone number or email.'); }
+    if (!phone) { return showError(els.step2Error, 'Please add a phone number.'); }
 
     var typeInfo = findType(state.selectedType);
     var dateObj = new Date(state.selectedDate + 'T00:00:00');
@@ -1074,7 +1072,7 @@
       state.meta = meta;
       state.maxParty = meta.maxPartySize || 12;
       state.partySize = Math.min(2, state.maxParty);
-      state.areas = meta.areas && meta.areas.length ? meta.areas : ['Booth (Inside)', 'Outside'];
+      state.areas = meta.areas && meta.areas.length ? meta.areas : ['House / Inside', 'Alfresco / Deck'];
       state.bookingTypes = meta.bookingTypes && meta.bookingTypes.length ? meta.bookingTypes : [];
 
       // Master switch off: whole page paused, nothing bookable.
