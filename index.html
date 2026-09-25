@@ -551,8 +551,8 @@
         <div style="height:22px"></div>
 
         <h2 class="section-title">Choose a date</h2>
-        <p class="section-hint">We take bookings only on weekdays, no weekends and no public holidays. Online bookings close at 11:59pm the night before, so the earliest date you can book is tomorrow.</p>
-        <p class="section-hint">Email us on cafebarco306@gmail.com for larger bookking and catering requirement.</p>
+        <p class="section-hint">We take bookings only on weekdays, no weekends and no public holidays. Online bookings close at 2:00pm the day before &mdash; e.g. to book for the 26th, book before 2:00pm on the 25th.</p>
+        <p class="section-hint">Email us on cafebarco306@gmail.com for larger booking and catering requirement.</p>
         <div id="dateStrip" class="date-strip"></div>
 
         <div style="height:22px"></div>
@@ -733,6 +733,26 @@
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
+  // Bookings for a date close at this hour (24h, Perth time) the day before.
+  var BOOKING_CUTOFF_HOUR = 14; // 2:00pm
+
+  // Current date/hour in Perth, whatever timezone the customer's device is in.
+  function perthNow() {
+    var parts = {};
+    try {
+      new Intl.DateTimeFormat('en-AU', {
+        timeZone: 'Australia/Perth', year: 'numeric', month: 'numeric',
+        day: 'numeric', hour: 'numeric', hourCycle: 'h23'
+      }).formatToParts(new Date()).forEach(function (p) { parts[p.type] = p.value; });
+    } catch (e) {}
+    if (!parts.year) {
+      // Fallback: Perth is UTC+8 with no daylight saving.
+      var d = new Date(Date.now() + 8 * 3600 * 1000);
+      return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate(), hour: d.getUTCHours() };
+    }
+    return { year: +parts.year, month: +parts.month, day: +parts.day, hour: +parts.hour % 24 };
+  }
+
   function toISODate(d) {
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   }
@@ -849,13 +869,14 @@
     els.dateStrip.innerHTML = '';
     var openDays = (state.meta.openDays || 'Mon,Tue,Wed,Thu,Fri').split(',').map(function (s) { return s.trim(); });
     var blackout = state.meta.blackoutDates || [];
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Online bookings close at 2:00pm (Perth time) the day before. Before
+    // 2pm the earliest bookable date is tomorrow; from 2pm onward it's the
+    // day after tomorrow. Uses Perth time regardless of the customer's
+    // own device timezone.
+    var perth = perthNow();
+    var cursor = new Date(perth.year, perth.month - 1, perth.day);
+    cursor.setDate(cursor.getDate() + (perth.hour >= BOOKING_CUTOFF_HOUR ? 2 : 1));
     var added = 0;
-    // Online bookings close at 11:59pm the night before — the earliest
-    // bookable date is always tomorrow, never today.
-    var cursor = new Date(today);
-    cursor.setDate(cursor.getDate() + 1);
     var guard = 0;
 
     while (added < 14 && guard < 60) {
